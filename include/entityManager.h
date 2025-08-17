@@ -54,13 +54,13 @@ public:
     /**
      * @brief EntityManager class' default constructor
      *
-     * Set maxID & newID to the desired or the default value and initializing
+     * Set maxID & nextID to the desired or the default value and initializing
      * recyledIDs, entityGens, & entityMasks
      *
      * @param maxid Maximum number of entity. Default: std::numeric_limits<EntityID>::max()
-     * @param newid The starting ID value for the first entity. Default: 0
+     * @param nextid The starting ID value for the first entity. Default: 0
      */
-    EntityManager(const EntityID maxid = std::numeric_limits<EntityID>::max(), const EntityID newid = 0);
+    EntityManager(const EntityID maxid = std::numeric_limits<EntityID>::max(), const EntityID nextid = 0);
 
     /// @}
 
@@ -175,7 +175,7 @@ public:
 
 private:
     EntityID maxID;
-    EntityID newID;
+    EntityID nextID;
 
     std::stack<EntityID> recycledIDs;
 

@@ -11,9 +11,9 @@
 namespace ecs {
 
 // EntityManager class' default constructor
-EntityManager::EntityManager(const EntityID maxid, const EntityID newid) :
+EntityManager::EntityManager(const EntityID maxid, const EntityID nextid) :
     maxID(maxid),
-    newID(newid),
+    nextID(nextid),
     recycledIDs(),
     entityGens(),
     entityMasks()
@@ -83,7 +83,7 @@ void EntityManager::removeMask(const Entity& entity, const EntityMask mask) {
 
 // Entity creation
 Entity EntityManager::createEntity(const EntityMask mask) {
-    if (newID < maxID) { // If the number of entities doesn't exceed the limit
+    if (nextID < maxID) { // If the number of entities doesn't exceed the limit
         Entity entity;
 
         // Use a recycled ID for the new entity
@@ -97,8 +97,8 @@ Entity EntityManager::createEntity(const EntityMask mask) {
 
         // Use a new ID for the new entity
         } else {
-            entity.id = newID;
-            newID++;
+            entity.id = nextID;
+            nextID++;
 
             entity.gen = 0;
 
