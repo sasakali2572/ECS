@@ -64,7 +64,7 @@ const T& ComponentPool<T>::getComponent(const EntityID id) const {
 }
 // Assign a component to an entity
 template<typename T>
-void ComponentPool<T>::assignComponent(const EntityID id, const T& component) {
+void ComponentPool<T>::assignComponent(const EntityID id, const T component) {
     // Resize sparseMap if the entity's ID is not yet listed in it
     if (id >= sparseMap.size()) {
         sparseMap.resize(id + 1, NULL_INDEX);

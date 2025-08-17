@@ -134,7 +134,7 @@ public:
      * @param id Entity's ID for the accessed entity
      * @param component New component for the entity
      */
-    void assignComponent(const EntityID id, const T& component);
+    void assignComponent(const EntityID id, const T component);
 
     /**
      * @brief Unassign a component of an entity

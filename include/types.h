@@ -13,7 +13,7 @@
 namespace ecs {
 
 /****************************************************
- * @name "types.h: Types for entity functionalities"
+ * @name Types for entity functionalities
  ****************************************************/
 /// @{
 
@@ -39,7 +39,7 @@ struct Entity {
 /// @}
 
 /****************************************************
- * @name "types.h: Types for component pool functionalities"
+ * @name Types for component pool functionalities
  ****************************************************/
 /// @{
 
@@ -48,6 +48,16 @@ using ComponentIndex = std::size_t;
 static constexpr ComponentIndex NULL_INDEX { std::numeric_limits<std::size_t>::max() };
 
 /// @}
+
+/****************************************************
+ * @name Types for component pool functionalities
+ ****************************************************/
+/// @{
+
+using ComponentTypeID = std::size_t;
+
+/// @}
+
 
 } // namespace ecs
 
