@@ -29,8 +29,8 @@ std::size_t EntityManager::size() const {
     return entityGens.size();
 }
 
-// Check whether an entity is active/valid
-bool EntityManager::isActive(const Entity& entity) const {
+// Check whether an entity is valid
+bool EntityManager::isValid(const Entity& entity) const {
     if (entity.id < entityGens.size()) {
         return (entityGens.at(entity.id) == entity.gen && entityMasks.at(entity.id) != NULL_MASK);
 
@@ -41,48 +41,48 @@ bool EntityManager::isActive(const Entity& entity) const {
 
 // Returns the mask of an entity
 EntityMask EntityManager::getMask(const Entity& entity) const {
-    if (isActive(entity)) {
+    if (isValid(entity)) {
         return entityMasks.at(entity.id);
 
     } else {
-        throw std::runtime_error("EntityManager::getMask() - Requested entity does not exists");
+        throw std::runtime_error("EntityManager::getMask() - Requested entity is not a valid entity");
     }
 }
 
 //Set an entity's mask to a new value
 void EntityManager::setMask(const Entity& entity, const EntityMask mask) {
-    if (isActive(entity)) {
+    if (isValid(entity)) {
         entityMasks.at(entity.id) = mask;
 
     } else {
-        throw std::runtime_error("EntityManager::setMask() - Requested entity does not exists");
+        throw std::runtime_error("EntityManager::setMask() - Requested entity is not a valid entity");
     }
 }
 
 // Activate bit(s) of an entity's mask
 void EntityManager::addMask(const Entity& entity, const EntityMask mask) {
-    if (isActive(entity)) {
+    if (isValid(entity)) {
         const EntityMask currentMask { entityMasks.at(entity.id) };
         entityMasks.at(entity.id) = currentMask | mask;
 
     } else {
-        throw std::runtime_error("EntityManager::addMask() - Requested entity does not exists");
+        throw std::runtime_error("EntityManager::addMask() - Requested entity is not a valid entity");
     }
 }
 
 // Deactivate bit(s) of an entity's mask
 void EntityManager::removeMask(const Entity& entity, const EntityMask mask) {
-    if (isActive(entity)) {
+    if (isValid(entity)) {
         const EntityMask currentMask { entityMasks.at(entity.id) };
         entityMasks.at(entity.id) = currentMask & (~mask);
 
     } else {
-        throw std::runtime_error("EntityManager::removeMask() - Requested entity does not exists");
+        throw std::runtime_error("EntityManager::removeMask() - Requested entity is not a valid entity");
     }
 }
 
 // Entity creation
-Entity EntityManager::addEntity(const EntityMask mask) {
+Entity EntityManager::createEntity(const EntityMask mask) {
     if (newID < maxID) { // If the number of entities doesn't exceed the limit
         Entity entity;
 
@@ -107,7 +107,7 @@ Entity EntityManager::addEntity(const EntityMask mask) {
         }
 
          // Check if the new entity properly added to the list of entities
-        if (isActive(entity)) {
+        if (isValid(entity)) {
             return entity;
 
         } else {
@@ -119,18 +119,18 @@ Entity EntityManager::addEntity(const EntityMask mask) {
     }
 }
 
-// Entity removal
-void EntityManager::removeEntity(const Entity& entity) {
-    if(isActive(entity)) {
+// Entity destruction
+void EntityManager::destroyEntity(const Entity& entity) {
+    if(isValid(entity)) {
         // Invalidate the entity
         entityGens.at(entity.id)++;
         entityMasks.at(entity.id) = NULL_MASK;
 
-        // Putting the removed entity's ID to the recycledIDs stack
+        // Putting the destroyed entity's ID to the recycledIDs stack
         recycledIDs.push(entity.id);
 
     } else {
-        throw std::runtime_error("EntityManager::removeEntity() - Requested entity does not exists");
+        throw std::runtime_error("EntityManager::removeEntity() - Requested entity is not a valid entity");
     }
 }
 

@@ -20,15 +20,15 @@
  * information about which components are associated with the entity.
  *
  *
- * Entity Creation, Removal, and ID Recycling:
+ * Entity Creation, Destruction, and ID Recycling:
  *
  * An entity is created by simply giving it an integer value as its ID. The ID given to it is
  * obtained from one of the two sources, that is by using a recyled ID that no longer being
  * used by an entity, or by giving it a completely new ID. A mask value of the entity is then
  * being stored in an array with the ID as index to it.
  *
- * An entity is removed by resetting the mask of the entity which placed in an array at the
- * index of its ID to NULL_MASK and recyling the removed entity ID to a stack of recyled IDs
+ * An entity is destructed by resetting the mask of the entity which placed in an array at the
+ * index of its ID to NULL_MASK and recyling the destructed entity ID to a stack of recyled IDs
  * which will be used when creating a new entity.
  */
 
@@ -89,15 +89,15 @@ public:
     /// @{
 
     /**
-     * @brief Check whether an entity is active/valid
+     * @brief Check whether an entity is valid
      *
-     * An active/valid entity is the one that has matching ID and generation number with
+     * An valid entity is the one that has matching ID and generation number with
      * a non NULL_MASK mask.
      *
      * @param entity A safe Entity handle with an ID and generation number to check
-     * @return bool - true if the entity is active/valid, false otherwise
+     * @return bool - true if the entity is valid, false otherwise
      */
-    bool isActive(const Entity& entity) const;
+    bool isValid(const Entity& entity) const;
 
     /// @}
 
@@ -110,7 +110,7 @@ public:
      * @brief Returns the mask of an entity
      * @param entity A safe Entity handle to access an entity mask
      * @return EntityMask - the mask of the requested entity
-     * @throw std::runtime_error if the requested entity is not active/valid
+     * @throw std::runtime_error if the requested entity is not valid
      */
     EntityMask getMask(const Entity& entity) const;
 
@@ -118,7 +118,7 @@ public:
      * @brief Set an entity's mask to a new value
      * @param entity A safe Entity handle to access and modify an entity mask
      * @param mask New value of EntityMask for the entity's mask
-     * @throw std::runtime_error if the requested entity is not active/valid
+     * @throw std::runtime_error if the requested entity is not valid
      */
     void setMask(const Entity& entity, const EntityMask mask);
 
@@ -126,7 +126,7 @@ public:
      * @brief Activate bit(s) of an entity's mask
      * @param entity A safe Entity handle to access and modify an entity mask
      * @param mask A string of bit(s) representing added components
-     * @throw std::runtime_error if the requested entity is not active/valid
+     * @throw std::runtime_error if the requested entity is not valid
      */
     void addMask(const Entity& entity, const EntityMask mask);
 
@@ -134,14 +134,14 @@ public:
      * @brief Deactivate bit(s) of an entity's mask
      * @param entity A safe Entity handle to access and modify an entity mask
      * @param mask A string of bit(s) representing removed components
-     * @throw std::runtime_error if the requested entity is not active/valid
+     * @throw std::runtime_error if the requested entity is not valid
      */
     void removeMask(const Entity& entity, const EntityMask mask);
 
     /// @}
 
     /****************************************************
-     * @name Entity Creation and Removal
+     * @name Entity Creation and Destruction
      ****************************************************/
     /// @{
 
@@ -155,21 +155,21 @@ public:
      * @param mask Value of EntityMask for the new entity
      * @return Entity - A safe Entity handle of the new entity
      * @throw std::runtime_error if the number of entity has reached its limit
-     * @throw std::runtime_error if the new entity is not active/valid
+     * @throw std::runtime_error if the new entity is not valid
     */
-    Entity addEntity(const EntityMask mask);
+    Entity createEntity(const EntityMask mask);
 
     /**
-     * @brief Entity removal
+     * @brief Entity destruction
      *
-     * Entity removal done by invalidating the entity's ID by incrementing entity's
-     * generation number and setting its mask to NULL_MASK, then adding the removed
+     * Entity destruction done by invalidating the entity's ID by incrementing entity's
+     * generation number and setting its mask to NULL_MASK, then adding the destroyed
      * entity's ID to the recycledIDs stack.
      *
-     * @param entity A safe Entity handle of the removed entity
-     * @throw std::runtime_error if the requested entity is not active/valid
+     * @param entity A safe Entity handle of the detroyed entity
+     * @throw std::runtime_error if the requested entity is not valid
      */
-    void removeEntity(const Entity& entity);
+    void destroyEntity(const Entity& entity);
 
     /// @}
 

@@ -53,23 +53,23 @@ int main() {
         assert((entityC == ecs::Entity{2, 0}));
         std::cout << "  [PASS] addEntity works and assigns sequential IDs." << std::endl;
 
-        // Test 1.3: isActive
-        assert(manager.isActive(entityA));
-        assert(manager.isActive(entityB));
+        // Test 1.3: isValid
+        assert(manager.isValid(entityA));
+        assert(manager.isValid(entityB));
         ecs::Entity staleB = { entityB.id, 99 }; // Create a stale handle
-        assert(!manager.isActive(staleB));
+        assert(!manager.isValid(staleB));
         ecs::Entity invalidId = { 999, 0 }; // Create an out-of-bounds handle
-        assert(!manager.isActive(invalidId));
-        std::cout << "  [PASS] isActive correctly validates handles." << std::endl;
+        assert(!manager.isValid(invalidId));
+        std::cout << "  [PASS] isValid correctly validates handles." << std::endl;
 
         // Test 1.4: Removing an Entity and ID Recycling
         manager.removeEntity(entityB);
-        assert(!manager.isActive(entityB)); // Should no longer be active
+        assert(!manager.isValid(entityB)); // Should no longer be active
         
         ecs::Entity entityD = manager.addEntity(16);
         assert(entityD.id == entityB.id); // Should reuse ID 1
         assert(entityD.gen == 1); // Should have the new generation
-        assert(manager.isActive(entityD));
+        assert(manager.isValid(entityD));
         std::cout << "  [PASS] removeEntity and ID recycling work as expected." << std::endl;
     }
     std::cout << "[SUCCESS] EntityManager tests passed." << std::endl;

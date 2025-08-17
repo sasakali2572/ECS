@@ -91,7 +91,7 @@ public:
     /// @}
 
     /****************************************************
-     * @name Component Validity Check
+     * @name Component Operations
      ****************************************************/
     /// @{
 
@@ -101,13 +101,6 @@ public:
      * @return bool - true if the entity has a component in this pool
      */
     bool hasComponent(const EntityID id) const;
-
-    /// @}
-
-    /****************************************************
-     * @name Component Getter Functions
-     ****************************************************/
-    /// @{
 
     /**
      * @brief Return a mutable reference to an entity's component
@@ -124,13 +117,6 @@ public:
      * @throw std::runtime_error if entity has no component in this pool
      */
     const T& getComponent(const EntityID id) const;
-
-    /// @}
-
-    /****************************************************
-     * @name Component Assignment and Unassignment
-     ****************************************************/
-    /// @{
 
     /**
      * @brief Assign a component to an entity
