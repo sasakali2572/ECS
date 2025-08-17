@@ -1,0 +1,8 @@
+# cmake build directory
+build
+
+# vscode project settings
+.vscode
+
+# doxygen output directory
+docs/output
