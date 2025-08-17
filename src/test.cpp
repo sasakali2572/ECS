@@ -42,16 +42,16 @@ int main() {
         std::cout << "  [PASS] Initial state is correct." << std::endl;
 
         // Test 1.2: Adding Entities
-        ecs::Entity entityA = manager.addEntity(1); // Mask = 1
-        ecs::Entity entityB = manager.addEntity(2); // Mask = 2
-        ecs::Entity entityC = manager.addEntity(4); // Mask = 4
+        ecs::Entity entityA = manager.createEntity(1); // Mask = 1
+        ecs::Entity entityB = manager.createEntity(2); // Mask = 2
+        ecs::Entity entityC = manager.createEntity(4); // Mask = 4
 
         assert(!manager.empty());
         assert(manager.size() == 3);
         assert((entityA == ecs::Entity{0, 0}));
         assert((entityB == ecs::Entity{1, 0}));
         assert((entityC == ecs::Entity{2, 0}));
-        std::cout << "  [PASS] addEntity works and assigns sequential IDs." << std::endl;
+        std::cout << "  [PASS] createEntity works and assigns sequential IDs." << std::endl;
 
         // Test 1.3: isValid
         assert(manager.isValid(entityA));
@@ -63,14 +63,14 @@ int main() {
         std::cout << "  [PASS] isValid correctly validates handles." << std::endl;
 
         // Test 1.4: Removing an Entity and ID Recycling
-        manager.removeEntity(entityB);
+        manager.destroyEntity(entityB);
         assert(!manager.isValid(entityB)); // Should no longer be active
         
-        ecs::Entity entityD = manager.addEntity(16);
+        ecs::Entity entityD = manager.createEntity(16);
         assert(entityD.id == entityB.id); // Should reuse ID 1
         assert(entityD.gen == 1); // Should have the new generation
         assert(manager.isValid(entityD));
-        std::cout << "  [PASS] removeEntity and ID recycling work as expected." << std::endl;
+        std::cout << "  [PASS] destroyEntity and ID recycling work as expected." << std::endl;
     }
     std::cout << "[SUCCESS] EntityManager tests passed." << std::endl;
 
