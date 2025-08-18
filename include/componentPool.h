@@ -133,6 +133,7 @@ public:
      *
      * @param id Entity's ID for the accessed entity
      * @param component New component for the entity
+     * @throw std::runtime_error if component failed to be assigned to an entity
      */
     void assignComponent(const EntityID id, const T component);
 

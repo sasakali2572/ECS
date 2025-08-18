@@ -58,7 +58,7 @@ public:
     EntityMask getMask(const Entity& entity) const;
 
     /**
-     * @brief Create a new entity and set it mask to 0 (has no components)
+     * @brief Create a new entity and set it mask to NULL_MASK
      * @return Entity - A safe Entity handle for the new entity
      */
     Entity createEntity();

@@ -81,6 +81,10 @@ void ComponentPool<T>::assignComponent(const EntityID id, const T component) {
 
         sparseMap.at(id) = densePool.size() - 1;
     }
+
+    if (!hasComponent(id)) {
+        throw std::runtime_error("ecs::ComponentPool::assignComponent() - Failed to assign component to an entity");
+    }
 }
 
 // Unassign a component of an entity
@@ -102,7 +106,6 @@ void ComponentPool<T>::unassignComponent(const EntityID id) {
         // Updating the sparseMap
         sparseMap.at(lastIndexID) = indexToRemove;
         sparseMap.at(id) = NULL_COMPONENT_INDEX;
-
     }
 }
 
