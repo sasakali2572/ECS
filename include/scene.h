@@ -23,6 +23,11 @@
 
 namespace ecs {
 
+/**
+ * @class Scene scene.h "include/scene.h"
+ * @brief A high-level class that manage the interactions between EntityManager and
+ * ComponentManagers and provides a way to implement the system
+ */
 class Scene {
 public:
     /****************************************************
