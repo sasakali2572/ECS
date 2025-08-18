@@ -6,17 +6,13 @@
 // Include your ECS headers
 #include "types.h"
 #include "entityManager.h"
-#include "componentPool.h"
+#include "componentManager.h"
 
 // A simple component type we can use for testing.
 struct Position {
     float x;
     float y;
-
-    // We add an equality operator to make assertions easier
-    bool operator==(const Position& other) const {
-        return x == other.x && y == other.y;
-    }
+    bool operator==(const Position& other) const { return x == other.x && y == other.y; }
 };
 
 // A second component type for more advanced tests.
@@ -24,7 +20,6 @@ struct Velocity {
     float dx;
     float dy;
 };
-
 
 int main() {
     std::cout << "--- Starting ECS Test Suite ---" << std::endl;
@@ -34,98 +29,126 @@ int main() {
     // ========================================================================
     std::cout << "\n[TESTING] EntityManager..." << std::endl;
     {
-        ecs::EntityManager manager;
+        ecs::EntityManager manager(10); // Max 10 entities for testing limit
 
-        // Test 1.1: Initial State
+        // Test Case: Initialization
         assert(manager.empty());
         assert(manager.size() == 0);
-        std::cout << "  [PASS] Initial state is correct." << std::endl;
+        std::cout << "  [PASS] Initial state." << std::endl;
 
-        // Test 1.2: Adding Entities
-        ecs::Entity entityA = manager.createEntity(1); // Mask = 1
-        ecs::Entity entityB = manager.createEntity(2); // Mask = 2
-        ecs::Entity entityC = manager.createEntity(4); // Mask = 4
-
-        assert(!manager.empty());
-        assert(manager.size() == 3);
+        // Test Case: Entity Creation
+        ecs::Entity entityA = manager.createEntity(1);
+        ecs::Entity entityB = manager.createEntity(2);
+        assert(manager.size() == 2);
         assert((entityA == ecs::Entity{0, 0}));
         assert((entityB == ecs::Entity{1, 0}));
-        assert((entityC == ecs::Entity{2, 0}));
-        std::cout << "  [PASS] createEntity works and assigns sequential IDs." << std::endl;
-
-        // Test 1.3: isValid
-        assert(manager.isValid(entityA));
-        assert(manager.isValid(entityB));
-        ecs::Entity staleB = { entityB.id, 99 }; // Create a stale handle
-        assert(!manager.isValid(staleB));
-        ecs::Entity invalidId = { 999, 0 }; // Create an out-of-bounds handle
-        assert(!manager.isValid(invalidId));
-        std::cout << "  [PASS] isValid correctly validates handles." << std::endl;
-
-        // Test 1.4: Removing an Entity and ID Recycling
-        manager.destroyEntity(entityB);
-        assert(!manager.isValid(entityB)); // Should no longer be active
+        std::cout << "  [PASS] Entity creation." << std::endl;
         
-        ecs::Entity entityD = manager.createEntity(16);
-        assert(entityD.id == entityB.id); // Should reuse ID 1
-        assert(entityD.gen == 1); // Should have the new generation
-        assert(manager.isValid(entityD));
-        std::cout << "  [PASS] destroyEntity and ID recycling work as expected." << std::endl;
+        // Test Case: Entity Validation (isValid)
+        assert(manager.isValid(entityA));
+        ecs::Entity staleA = { entityA.id, 99 };
+        assert(!manager.isValid(staleA));
+        ecs::Entity invalidId = { 999, 0 };
+        assert(!manager.isValid(invalidId));
+        std::cout << "  [PASS] Entity validation." << std::endl;
+
+        // Test Case: Entity Destruction
+        manager.destroyEntity(entityA);
+        assert(!manager.isValid(entityA));
+        std::cout << "  [PASS] Entity destruction." << std::endl;
+
+        // Test Case: Edge Case - ID Recycling
+        ecs::Entity entityC = manager.createEntity(4);
+        assert(entityC.id == entityA.id); // Recycled ID 0
+        assert(entityC.gen == 1);         // Incremented generation
+        assert(manager.isValid(entityC));
+        std::cout << "  [PASS] ID recycling and generation." << std::endl;
+        
+        // Test Case: Edge Case - Max Entities Limit
+        for(int i = 0; i < 7; ++i) { manager.createEntity(1); } // Fill up to 9 entities (0,1,2,3,4,5,6,7,8)
+        ecs::Entity entityLast = manager.createEntity(1); // Entity 9, manager is now full
+        assert(entityLast.id == 9);
+
+        bool exceptionThrown = false;
+        try {
+            manager.createEntity(1); // Should fail
+        } catch (const std::runtime_error& e) {
+            exceptionThrown = true;
+        }
+        assert(exceptionThrown);
+        std::cout << "  [PASS] Max entity limit." << std::endl;
     }
     std::cout << "[SUCCESS] EntityManager tests passed." << std::endl;
 
 
     // ========================================================================
-    // Section 2: ComponentPool Tests
+    // Section 2: ComponentManager & ComponentPool Tests
     // ========================================================================
-    std::cout << "\n[TESTING] ComponentPool..." << std::endl;
+    std::cout << "\n[TESTING] ComponentManager..." << std::endl;
     {
-        ecs::ComponentPool<Position> posPool;
-        ecs::EntityID idA = 5, idB = 10, idC = 15; // Use sparse IDs
-
-        // Test 2.1: Initial State
-        assert(posPool.empty());
-        assert(posPool.size() == 0);
-        std::cout << "  [PASS] Initial state is correct." << std::endl;
-
-        // Test 2.2: Assigning and Checking Components
-        posPool.assignComponent(idA, { 10.0f, 20.0f });
-        posPool.assignComponent(idB, { 30.0f, 40.0f });
-
-        assert(posPool.size() == 2);
-        assert(posPool.hasComponent(idA));
-        assert(posPool.hasComponent(idB));
-        assert(!posPool.hasComponent(idC));
-        assert(!posPool.hasComponent(999)); // Safe out-of-bounds check
-        std::cout << "  [PASS] assignComponent and hasComponent work." << std::endl;
-
-        // Test 2.3: Getting and Modifying Components
-        Position posA_val = posPool.getComponent(idA);
-        Position expectedPosA = { 10.0f, 20.0f };
-        assert(posA_val == expectedPosA);
+        ecs::ComponentManager compManager;
         
-        posPool.getComponent(idB).x = 99.0f;
-        assert(posPool.getComponent(idB).x == 99.0f);
-        std::cout << "  [PASS] getComponent (read and write) works." << std::endl;
+        // Test Case: Registration
+        compManager.registerComponentType<Position>();
+        compManager.registerComponentType<Velocity>();
+        assert(compManager.size() == 2);
+        assert(compManager.isComponentTypeRegistered<Position>());
+        assert(!compManager.isComponentTypeRegistered<int>()); // Test unregistered type
+        std::cout << "  [PASS] Component type registration." << std::endl;
 
-        // Test 2.4: Unassigning (Swap-and-Pop)
-        posPool.assignComponent(idC, { 50.0f, 60.0f });
-        assert(posPool.size() == 3);
+        // Test Case: Edge Case - Double Registration
+        bool exceptionThrown = false;
+        try {
+            compManager.registerComponentType<Position>();
+        } catch (const std::runtime_error& e) {
+            exceptionThrown = true;
+        }
+        assert(exceptionThrown);
+        std::cout << "  [PASS] Double registration prevention." << std::endl;
         
-        posPool.unassignComponent(idB); // Remove the middle element
+        // Test Cases: Component Assignment & Retrieval
+        ecs::EntityID idA = 5, idB = 10, idC = 15;
+        compManager.assignComponent<Position>(idA, { 1.f, 1.f });
+        compManager.assignComponent<Position>(idB, { 2.f, 2.f });
+        compManager.assignComponent<Position>(idC, { 3.f, 3.f });
+        
+        assert(compManager.hasComponent<Position>(idA));
+        assert(!compManager.hasComponent<Velocity>(idA));
+        compManager.getComponent<Position>(idB).x = 99.f;
+        assert(compManager.getComponent<Position>(idB).x == 99.f);
+        std::cout << "  [PASS] Component assignment and retrieval." << std::endl;
 
-        assert(posPool.size() == 2);
-        assert(!posPool.hasComponent(idB));
-        assert(posPool.hasComponent(idA));
-        assert(posPool.hasComponent(idC));
-        Position expectedPosC = { 50.0f, 60.0f };
-        assert(posPool.getComponent(idC) == expectedPosC);
-        std::cout << "  [PASS] unassignComponent (swap-and-pop) works correctly." << std::endl;
+        // Test Case: Edge Case - Swap-and-Pop (Middle Element)
+        compManager.unassignComponent<Position>(idB);
+        assert(!compManager.hasComponent<Position>(idB));
+        assert(compManager.hasComponent<Position>(idA));
+        assert(compManager.hasComponent<Position>(idC));
+        assert((compManager.getComponent<Position>(idC) == Position{3.f, 3.f})); // Check integrity of moved component
+        std::cout << "  [PASS] Swap-and-pop (middle element)." << std::endl;
+        
+        // Test Case: Edge Case - Swap-and-Pop (Last Element)
+        compManager.unassignComponent<Position>(idC);
+        assert(!compManager.hasComponent<Position>(idC));
+        assert(compManager.hasComponent<Position>(idA));
+        std::cout << "  [PASS] Swap-and-pop (last element)." << std::endl;
+
+        // Test Case: Edge Case - Swap-and-Pop (Only Element)
+        compManager.unassignComponent<Position>(idA);
+        assert(!compManager.hasComponent<Position>(idA));
+        std::cout << "  [PASS] Swap-and-pop (only element)." << std::endl;
+
+        // Test Case: System-Level entityDestroyed
+        compManager.assignComponent<Position>(20, { 1.f, 1.f });
+        compManager.assignComponent<Velocity>(20, { 2.f, 2.f });
+        compManager.entityDestroyed(20);
+        assert(!compManager.hasComponent<Position>(20));
+        assert(!compManager.hasComponent<Velocity>(20));
+        std::cout << "  [PASS] entityDestroyed broadcast." << std::endl;
     }
-    std::cout << "[SUCCESS] ComponentPool tests passed." << std::endl;
-
+    std::cout << "[SUCCESS] ComponentManager tests passed." << std::endl;
+    
     // ========================================================================
-    std::cout << "\n--- All tests passed! Congratulations! ---" << std::endl;
+    std::cout << "\n--- All tests passed! Congratulations on building a complete ECS core! ---" << std::endl;
 
     return 0;
 }

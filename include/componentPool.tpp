@@ -100,8 +100,8 @@ void ComponentPool<T>::unassignComponent(const EntityID id) {
         densePool.pop_back();
 
         // Updating the sparseMap
-        sparseMap.at(id) = NULL_COMPONENT_INDEX;
         sparseMap.at(lastIndexID) = indexToRemove;
+        sparseMap.at(id) = NULL_COMPONENT_INDEX;
 
     } else {
         throw std::runtime_error("ecs::ComponentPool::unassignComponent() - Requested entity does not have a component of this type");

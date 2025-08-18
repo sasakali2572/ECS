@@ -45,12 +45,12 @@ struct Entity {
 
 using ComponentIndex = std::size_t;
 
-static constexpr ComponentIndex NULL_INDEX { std::numeric_limits<std::size_t>::max() };
+static constexpr ComponentIndex NULL_COMPONENT_INDEX { std::numeric_limits<ComponentIndex>::max() };
 
 /// @}
 
 /****************************************************
- * @name Types for component pool functionalities
+ * @name Types for component manager functionalities
  ****************************************************/
 /// @{
 
