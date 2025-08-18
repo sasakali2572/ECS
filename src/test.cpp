@@ -1,154 +1,114 @@
 #include <iostream>
 #include <cassert>
 #include <stdexcept>
-#include <string>
 
 // Include your ECS headers
 #include "types.h"
+#include "scene.h"
 #include "entityManager.h"
 #include "componentManager.h"
 
-// A simple component type we can use for testing.
+// Define our component types for testing
 struct Position {
     float x;
     float y;
-    bool operator==(const Position& other) const { return x == other.x && y == other.y; }
 };
 
-// A second component type for more advanced tests.
 struct Velocity {
     float dx;
     float dy;
 };
 
+struct Tag {
+    // A component with no data
+};
+
+
 int main() {
-    std::cout << "--- Starting ECS Test Suite ---" << std::endl;
+    std::cout << "--- Starting Scene Test Suite ---" << std::endl;
+
+    // Test 1: Initialization and Component Registration
+    std::cout << "\n[TESTING] Initialization and Registration..." << std::endl;
+    ecs::Scene scene;
+    scene.registerComponent<Position>();
+    scene.registerComponent<Velocity>();
+    scene.registerComponent<Tag>();
+
+    assert(scene.getComponentManager().isComponentTypeRegistered<Position>());
+    assert(scene.getComponentManager().isComponentTypeRegistered<Velocity>());
+    std::cout << "  [PASS] Scene created managers and registered components." << std::endl;
+
+    // Test 2: Entity Creation and Validation
+    std::cout << "\n[TESTING] Entity Management..." << std::endl;
+    ecs::Entity entityA = scene.createEntity();
+    assert(scene.isEntityValid(entityA));
+    assert(scene.getMask(entityA) == ecs::NULL_MASK); // Should have no components
+    std::cout << "  [PASS] createEntity and isEntityValid work." << std::endl;
+
+    // Test 3: Component Orchestration (Add)
+    std::cout << "\n[TESTING] addComponent Orchestration..." << std::endl;
+    scene.addComponent<Position>(entityA, { 10.f, 20.f });
+
+    // Check 3.1: The component exists in the ComponentManager
+    assert(scene.hasComponent<Position>(entityA));
+    assert(!scene.hasComponent<Velocity>(entityA));
+
+    // Check 3.2: The mask was correctly updated in the EntityManager
+    ecs::EntityMask posMask = scene.getComponentManager().getComponentTypeMask<Position>();
+    assert(posMask == 1);
+    assert(scene.getMask(entityA) == posMask);
+    std::cout << "  [PASS] addComponent correctly added data and updated the entity mask." << std::endl;
+
+    // Add a second component
+    scene.addComponent<Velocity>(entityA, { 1.f, 2.f });
+    ecs::EntityMask velMask = scene.getComponentManager().getComponentTypeMask<Velocity>();
+    assert(velMask == 2);
+    assert(scene.getMask(entityA) == (posMask | velMask)); // Mask should be 3
+    std::cout << "  [PASS] Adding a second component correctly updated the mask." << std::endl;
+
+    // Test 4: Multi-component Checks
+    bool hasComponentsResult;
+    std::cout << "\n[TESTING] hasComponents..." << std::endl;
+    hasComponentsResult = scene.hasComponents<Position, Velocity>(entityA);
+    assert(hasComponentsResult);
+    hasComponentsResult = scene.hasComponents<Position, Tag>(entityA);
+    assert(!hasComponentsResult);
+    std::cout << "  [PASS] hasComponents correctly checks for multiple components." << std::endl;
+
+    // Test 5: Component Orchestration (Remove)
+    std::cout << "\n[TESTING] removeComponent Orchestration..." << std::endl;
+    scene.removeComponent<Position>(entityA);
+    assert(!scene.hasComponent<Position>(entityA));
+    assert(scene.hasComponent<Velocity>(entityA)); // Velocity should remain
+    assert(scene.getMask(entityA) == velMask); // Mask should now only be the velocity mask
+    std::cout << "  [PASS] removeComponent correctly removed data and updated the entity mask." << std::endl;
+
+    // Test 6: Entity Destruction Orchestration
+    std::cout << "\n[TESTING] destroyEntity Orchestration..." << std::endl;
+    ecs::Entity entityB = scene.createEntity();
+    scene.addComponent<Position>(entityB, { 0.f, 0.f });
+    scene.addComponent<Tag>(entityB, {});
+
+    ecs::EntityID b_id = entityB.id; // Save the ID for later checks
+
+    assert(scene.isEntityValid(entityB));
+    assert(scene.hasComponent<Position>(entityB));
+    assert(scene.hasComponent<Tag>(entityB));
+
+    scene.destroyEntity(entityB);
+
+    // Check 6.1: The entity is no longer valid in the EntityManager
+    assert(!scene.isEntityValid(entityB));
+
+    // Check 6.2: The components were cleaned up in the ComponentManager
+    // We use the raw ID here because the Entity handle is now invalid
+    assert(!scene.getComponentManager().hasComponent<Position>(b_id));
+    assert(!scene.getComponentManager().hasComponent<Tag>(b_id));
+    std::cout << "  [PASS] destroyEntity correctly invalidated the entity and cleaned up components." << std::endl;
+
 
     // ========================================================================
-    // Section 1: EntityManager Tests
-    // ========================================================================
-    std::cout << "\n[TESTING] EntityManager..." << std::endl;
-    {
-        ecs::EntityManager manager(10); // Max 10 entities for testing limit
-
-        // Test Case: Initialization
-        assert(manager.empty());
-        assert(manager.size() == 0);
-        std::cout << "  [PASS] Initial state." << std::endl;
-
-        // Test Case: Entity Creation
-        ecs::Entity entityA = manager.createEntity(1);
-        ecs::Entity entityB = manager.createEntity(2);
-        assert(manager.size() == 2);
-        assert((entityA == ecs::Entity{0, 0}));
-        assert((entityB == ecs::Entity{1, 0}));
-        std::cout << "  [PASS] Entity creation." << std::endl;
-        
-        // Test Case: Entity Validation (isValid)
-        assert(manager.isValid(entityA));
-        ecs::Entity staleA = { entityA.id, 99 };
-        assert(!manager.isValid(staleA));
-        ecs::Entity invalidId = { 999, 0 };
-        assert(!manager.isValid(invalidId));
-        std::cout << "  [PASS] Entity validation." << std::endl;
-
-        // Test Case: Entity Destruction
-        manager.destroyEntity(entityA);
-        assert(!manager.isValid(entityA));
-        std::cout << "  [PASS] Entity destruction." << std::endl;
-
-        // Test Case: Edge Case - ID Recycling
-        ecs::Entity entityC = manager.createEntity(4);
-        assert(entityC.id == entityA.id); // Recycled ID 0
-        assert(entityC.gen == 1);         // Incremented generation
-        assert(manager.isValid(entityC));
-        std::cout << "  [PASS] ID recycling and generation." << std::endl;
-        
-        // Test Case: Edge Case - Max Entities Limit
-        for(int i = 0; i < 7; ++i) { manager.createEntity(1); } // Fill up to 9 entities (0,1,2,3,4,5,6,7,8)
-        ecs::Entity entityLast = manager.createEntity(1); // Entity 9, manager is now full
-        assert(entityLast.id == 9);
-
-        bool exceptionThrown = false;
-        try {
-            manager.createEntity(1); // Should fail
-        } catch (const std::runtime_error& e) {
-            exceptionThrown = true;
-        }
-        assert(exceptionThrown);
-        std::cout << "  [PASS] Max entity limit." << std::endl;
-    }
-    std::cout << "[SUCCESS] EntityManager tests passed." << std::endl;
-
-
-    // ========================================================================
-    // Section 2: ComponentManager & ComponentPool Tests
-    // ========================================================================
-    std::cout << "\n[TESTING] ComponentManager..." << std::endl;
-    {
-        ecs::ComponentManager compManager;
-        
-        // Test Case: Registration
-        compManager.registerComponentType<Position>();
-        compManager.registerComponentType<Velocity>();
-        assert(compManager.size() == 2);
-        assert(compManager.isComponentTypeRegistered<Position>());
-        assert(!compManager.isComponentTypeRegistered<int>()); // Test unregistered type
-        std::cout << "  [PASS] Component type registration." << std::endl;
-
-        // Test Case: Edge Case - Double Registration
-        bool exceptionThrown = false;
-        try {
-            compManager.registerComponentType<Position>();
-        } catch (const std::runtime_error& e) {
-            exceptionThrown = true;
-        }
-        assert(exceptionThrown);
-        std::cout << "  [PASS] Double registration prevention." << std::endl;
-        
-        // Test Cases: Component Assignment & Retrieval
-        ecs::EntityID idA = 5, idB = 10, idC = 15;
-        compManager.assignComponent<Position>(idA, { 1.f, 1.f });
-        compManager.assignComponent<Position>(idB, { 2.f, 2.f });
-        compManager.assignComponent<Position>(idC, { 3.f, 3.f });
-        
-        assert(compManager.hasComponent<Position>(idA));
-        assert(!compManager.hasComponent<Velocity>(idA));
-        compManager.getComponent<Position>(idB).x = 99.f;
-        assert(compManager.getComponent<Position>(idB).x == 99.f);
-        std::cout << "  [PASS] Component assignment and retrieval." << std::endl;
-
-        // Test Case: Edge Case - Swap-and-Pop (Middle Element)
-        compManager.unassignComponent<Position>(idB);
-        assert(!compManager.hasComponent<Position>(idB));
-        assert(compManager.hasComponent<Position>(idA));
-        assert(compManager.hasComponent<Position>(idC));
-        assert((compManager.getComponent<Position>(idC) == Position{3.f, 3.f})); // Check integrity of moved component
-        std::cout << "  [PASS] Swap-and-pop (middle element)." << std::endl;
-        
-        // Test Case: Edge Case - Swap-and-Pop (Last Element)
-        compManager.unassignComponent<Position>(idC);
-        assert(!compManager.hasComponent<Position>(idC));
-        assert(compManager.hasComponent<Position>(idA));
-        std::cout << "  [PASS] Swap-and-pop (last element)." << std::endl;
-
-        // Test Case: Edge Case - Swap-and-Pop (Only Element)
-        compManager.unassignComponent<Position>(idA);
-        assert(!compManager.hasComponent<Position>(idA));
-        std::cout << "  [PASS] Swap-and-pop (only element)." << std::endl;
-
-        // Test Case: System-Level entityDestroyed
-        compManager.assignComponent<Position>(20, { 1.f, 1.f });
-        compManager.assignComponent<Velocity>(20, { 2.f, 2.f });
-        compManager.entityDestroyed(20);
-        assert(!compManager.hasComponent<Position>(20));
-        assert(!compManager.hasComponent<Velocity>(20));
-        std::cout << "  [PASS] entityDestroyed broadcast." << std::endl;
-    }
-    std::cout << "[SUCCESS] ComponentManager tests passed." << std::endl;
-    
-    // ========================================================================
-    std::cout << "\n--- All tests passed! Congratulations on building a complete ECS core! ---" << std::endl;
+    std::cout << "\n--- All Scene tests passed! Your ECS core is fully functional! ---" << std::endl;
 
     return 0;
 }

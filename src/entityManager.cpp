@@ -32,7 +32,7 @@ std::size_t EntityManager::size() const {
 // Check whether an entity is valid
 bool EntityManager::isValid(const Entity& entity) const {
     if (entity.id < entityGens.size()) {
-        return (entityGens.at(entity.id) == entity.gen && entityMasks.at(entity.id) != NULL_MASK);
+        return (entityGens.at(entity.id) == entity.gen);
 
     } else {
         return false;
@@ -111,11 +111,11 @@ Entity EntityManager::createEntity(const EntityMask mask) {
             return entity;
 
         } else {
-            throw std::runtime_error("EntityManager::addEntity() - Failed to create a new entity");
+            throw std::runtime_error("EntityManager::createEntity() - Failed to create a new entity");
         }
 
     } else {
-        throw std::runtime_error("EntityManager::addEntity() - Number of entities has reached the limit, failed to create a new entity");
+        throw std::runtime_error("EntityManager::createEntity() - Number of entities has reached the limit, failed to create a new entity");
     }
 }
 
@@ -130,7 +130,7 @@ void EntityManager::destroyEntity(const Entity& entity) {
         recycledIDs.push(entity.id);
 
     } else {
-        throw std::runtime_error("EntityManager::removeEntity() - Requested entity is not a valid entity");
+        throw std::runtime_error("EntityManager::destroyEntity() - Requested entity is not a valid entity");
     }
 }
 
