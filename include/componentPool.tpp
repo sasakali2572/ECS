@@ -3,8 +3,8 @@
  * @brief Definitions and implementations of ComponentPool templated class
  */
 
+#include <cstddef>
 #include <stdexcept>
-#include <vector>
 #include "types.h"
 #include "componentPool.h"
 
@@ -21,20 +21,20 @@ ComponentPool<T>::ComponentPool() :
 // Check whether densePool is empty
 template<typename T>
 bool ComponentPool<T>::empty() const {
-    return denseMap.empty();
+    return densePool.empty();
 }
 
 // Returns the number of elements in densePool
 template<typename T>
 std::size_t ComponentPool<T>::size() const {
-    return denseMap.size();
+    return densePool.size();
 }
 
 // Check whether an entity has a component in the pool
 template<typename T>
 bool ComponentPool<T>::hasComponent(const EntityID id) const {
     if (id < sparseMap.size()) {
-        return sparseMap.at(id) != NULL_INDEX;
+        return sparseMap.at(id) != NULL_COMPONENT_INDEX;
 
     } else {
         return false;
@@ -67,7 +67,7 @@ template<typename T>
 void ComponentPool<T>::assignComponent(const EntityID id, const T component) {
     // Resize sparseMap if the entity's ID is not yet listed in it
     if (id >= sparseMap.size()) {
-        sparseMap.resize(id + 1, NULL_INDEX);
+        sparseMap.resize(id + 1, NULL_COMPONENT_INDEX);
     }
 
     // If the entity already has a component, set it to the new value, else add the component
@@ -100,7 +100,7 @@ void ComponentPool<T>::unassignComponent(const EntityID id) {
         densePool.pop_back();
 
         // Updating the sparseMap
-        sparseMap.at(id) = NULL_INDEX;
+        sparseMap.at(id) = NULL_COMPONENT_INDEX;
         sparseMap.at(lastIndexID) = indexToRemove;
 
     } else {
