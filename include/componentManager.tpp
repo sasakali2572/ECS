@@ -1,9 +1,8 @@
 /**
  * @file componentManager.tpp
- * @brief Definitions and implementations of ComponentManager class
+ * @brief Definitions and implementations of templated functions in ComponentManager class
  */
 
-#include <cstddef>
 #include <stdexcept>
 #include <typeindex>
 #include <memory>
@@ -12,25 +11,6 @@
 #include "componentManager.h"
 
 namespace ecs {
-
-// ComponentManager class' default constructor
-ComponentManager::ComponentManager(ComponentTypeID maxid, ComponentTypeID nextid) :
-    maxID(maxid),
-    nextID(nextid),
-    idMap(),
-    maskMap(),
-    componentPools()
-{}
-
-// Check whether componentPools is empty
-bool ComponentManager::empty() const {
-    return componentPools.empty();
-}
-
-// Returns the number of elements in componentPools
-std::size_t ComponentManager::size() const {
-    return componentPools.size();
-}
 
 // Check whether a component type has been registered
 template<typename T>
@@ -137,15 +117,6 @@ void ComponentManager::unassignComponent(const EntityID id) {
 
     } else {
         throw std::runtime_error("ecs::ComponentManager::unassignComponent() - Component type is not registered");
-    }
-}
-
-// Notify all component pools that an entity has been destroyed
-void ComponentManager::entityDestroyed(const EntityID id) {
-    for (const auto& genericPool : componentPools) {
-        const auto& pool { genericPool.get() };
-
-        pool->unassignComponent(id);
     }
 }
 
