@@ -179,7 +179,7 @@ ComponentPool<T>* ComponentManager::getPool() const {
         const std::type_index typeIndex { std::type_index(typeid(T)) };
         const ComponentTypeID typeID { idMap.at(typeIndex) };
 
-        auto genericPool { componentPools.at(typeID).get() };
+        const auto genericPool { componentPools.at(typeID).get() };
         return static_cast<ComponentPool<T>*>(genericPool);
 
     } else {

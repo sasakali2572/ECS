@@ -91,13 +91,18 @@ public:
     /**
      * @brief Check whether an entity is valid
      *
-     * An valid entity is the one that has matching ID and generation number with
-     * a non NULL_MASK mask.
+     * An valid entity is the one that has matching ID and generation number
      *
      * @param entity A safe Entity handle with an ID and generation number to check
      * @return bool - true if the entity is valid, false otherwise
      */
     bool isValid(const Entity& entity) const;
+
+    /**
+     * @brief Returns an array of Entity handle with valid ID and generation number
+     * @return std::vector<Entity> - Array of valid Entity handles
+     */
+    std::vector<Entity> getValidEntities() const;
 
     /// @}
 

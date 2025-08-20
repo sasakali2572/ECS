@@ -14,12 +14,26 @@
  * Scene class is the one that owning the EntityManager and ComponentManager which implemented
  * as a unique_ptr to the manager objects. This class works by giving instructions to both
  * managers to do the task each of them specialized to do.
+ *
+ *
+ * Systems in Scene:
+ *
+ * System as a part of ECS architecture is implemented in the Scene as an array that holds pointers
+ * to available systems. In the array, systems are sorted by their priority value with lower valued
+ * system is the one that will placed before the higher valued one. This system sorting is important
+ * because when the Scene update, the systems will update consecutively according to its position in
+ * the array.
  */
 
+#include <limits>
+#include <typeindex>
 #include <memory>
+#include <vector>
+#include <unordered_map>
 #include "types.h"
 #include "entityManager.h"
 #include "componentManager.h"
+#include "system.h"
 
 namespace ecs {
 
@@ -144,6 +158,88 @@ public:
     /// @}
 
     /****************************************************
+     * @name System Functionalities
+     ****************************************************/
+    /// @{
+
+    /**
+     * @brief Check whether a system is exists in the Scene
+     * @return bool - true if the system is exists in the Scene, false otherwise
+     */
+    template<typename T>
+    bool hasSystem() const;
+
+    /**
+     * @brief Returns a mutable reference to a system object
+     * @return A mutable reference to a system object
+     * @throw std::runtime_error if the system do not exists in the Scene
+     */
+    template<typename T>
+    T& getSystem();
+
+    /**
+     * @brief Returns a read-only reference to a system object
+     * @return A read-only reference to a system object
+     * @throw std::runtime_error if the system do not exists in the Scene
+     */
+    template<typename T>
+    const T& getSystem() const;
+
+    /**
+     * @brief add a system to the Scene
+     * @throw std::runtime_error if the same system already exists in the Scene
+     */
+    template<typename T>
+    void addSystem();
+
+    /**
+     * @brief remove a system from the Scene
+     * @throw std::runtime_error if the system do not exists in the Scene
+     */
+    template<typename T>
+    void removeSystem();
+
+    /**
+     * @brief Check whether a system is enabled
+     * @return bool - true if the system is enabled, false otherwise
+     * @throw std::runtime_error if the system do not exists in the Scene
+     */
+    template<typename T>
+    bool isSystemEnabled() const;
+
+    /**
+     * @brief Set a system to be enabled/disabled
+     * @param isEnabled A value to enable/disable a system. true for enabling, false for disabling
+     * @throw std::runtime_error if the system do not exists in the Scene
+     */
+    template<typename T>
+    void setSystemEnabled(bool isEnabled);
+
+    /**
+     * @brief Update the state of the scene by instructing each system to update
+     * @param deltaTime elapsed time between last loop and current loop, essential for physics systems
+     * @throw std::runtime_error if the system do not exists in the Scene
+     */
+    void update(float deltaTime);
+
+    /// @}
+
+    /****************************************************
+     * @name High-Level Query
+     ****************************************************/
+    /// @{
+
+    /**
+     * @brief Returns an array of Entity handles that have a list of components
+     * @return std::vector<Entity> - Array of Entity handles that have a list of components
+     */
+    template<typename... ComponentTypes>
+    std::vector<Entity> getEntitiesWith() const;
+
+    /// @}
+
+
+    /****************************************************
      * @name Managers Direct Access
      ****************************************************/
     /// @{
@@ -162,11 +258,24 @@ public:
 
     /// @}
 
+private:
+    /**
+     * @brief Sort systems in the Scene by their priority value
+     * @throw std::runtime_error if system(s) doesn't provide the priority value
+     */
+    void sortSystems();
+
+    /**
+     * @brief Rebuild indexMap so it point to the correct system
+     */
+    void rebuildMap();
 
 private:
+    std::unordered_map<std::type_index, SystemIndex> indexMap;
+    std::vector<std::unique_ptr<System>> systems;
+
     std::unique_ptr<EntityManager> entityManager;
     std::unique_ptr<ComponentManager> componentManager;
-
 };
 
 } // namespace ecs

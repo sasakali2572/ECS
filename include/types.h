@@ -58,6 +58,16 @@ using ComponentTypeID = std::size_t;
 
 /// @}
 
+/****************************************************
+ * @name Types for system functionalities
+ ****************************************************/
+/// @{
+
+using SystemIndex = std::size_t;
+using SystemPriority = uint64_t;
+
+/// @}
+
 
 } // namespace ecs
 

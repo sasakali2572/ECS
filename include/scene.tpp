@@ -3,7 +3,9 @@
  * @brief Definitions and implementation of Scene class
  */
 
+#include <algorithm>
 #include <stdexcept>
+#include <typeindex>
 #include <memory>
 #include "types.h"
 #include "scene.h"
@@ -12,6 +14,8 @@ namespace ecs {
 
 // Scene class' constructor, initialize entityManager and componentManager
 Scene::Scene() :
+    indexMap(),
+    systems(),
     entityManager(std::make_unique<EntityManager>()),
     componentManager(std::make_unique<ComponentManager>())
 {}
@@ -123,6 +127,139 @@ void Scene::removeComponent(const Entity& entity) {
     }
 }
 
+
+// Check whether a system is exists in the Scene
+template<typename T>
+bool Scene::hasSystem() const {
+    const std::type_index typeIndex { std::type_index(typeid(T)) };
+
+    return indexMap.contains(typeIndex);
+}
+
+// Returns a mutable reference to a system object
+template<typename T>
+T& Scene::getSystem() {
+    if (hasSystem<T>()) {
+        const std::type_index typeIndex { std::type_index(typeid(T)) };
+        const SystemIndex systemIndex { indexMap.at(typeIndex) };
+
+        const auto genericSystem { systems.at(systemIndex).get() };
+        const auto derivedSystem { dynamic_cast<T*>(genericSystem) };
+        return *derivedSystem;
+
+    } else {
+        throw std::runtime_error("ecs::Scene::getSystem() - System do not exists in the scene");
+    }
+}
+
+// Returns a read-only reference to a system object
+template<typename T>
+const T& Scene::getSystem() const {
+    if (hasSystem<T>()) {
+        const std::type_index typeIndex { std::type_index(typeid(T)) };
+        const SystemIndex systemIndex { indexMap.at(typeIndex) };
+
+        const auto genericSystem { systems.at(systemIndex).get() };
+        const auto derivedSystem { dynamic_cast<T*>(genericSystem) };
+        return *derivedSystem;
+
+    } else {
+        throw std::runtime_error("ecs::Scene::getSystem() - System do not exists in the scene");
+    }
+}
+
+// add a system to the Scene
+template<typename T>
+void Scene::addSystem() {
+    if (!hasSystem<T>()) {
+        systems.push_back(std::make_unique<T>());
+
+        const std::type_index typeIndex { std::type_index(typeid(T)) };
+        const SystemIndex systemIndex { systems.size() - 1 };
+
+        indexMap.insert({ typeIndex, systemIndex });
+
+        sortSystems();
+
+    } else {
+        throw std::runtime_error("ecs::Scene::addSystem() - Can't add the sam system more than once");
+    }
+}
+
+// remove a system from the Scene
+template<typename T>
+void Scene::removeSystem() {
+    if (hasSystem<T>()) {
+        const std::type_index typeIndex { std::type_index(typeid(T)) };
+        const SystemIndex systemIndex { indexMap.at(typeIndex) };
+
+        systems.erase(systems.begin() + systemIndex);
+
+        rebuildMap();
+
+    } else {
+        throw std::runtime_error("ecs::Scene::removeSystem() - System do not exists in the scene");
+    }
+}
+
+// Check whether a system is enabled
+template<typename T>
+bool Scene::isSystemEnabled() const {
+    if (hasSystem<T>()) {
+        const std::type_index typeIndex { std::type_index(typeid(T)) };
+        const SystemIndex systemIndex { indexMap.at(typeIndex) };
+
+        const auto& system { systems.at(systemIndex) };
+        return system->isEnabled();
+
+    } else {
+        throw std::runtime_error("ecs::Scene::isSystemEnabled() - System do not exists in the scene");
+    }
+}
+
+// Set a system to be enabled/disabled
+template<typename T>
+void Scene::setSystemEnabled(bool isEnabled) {
+    if (hasSystem<T>()) {
+        const std::type_index typeIndex { std::type_index(typeid(T)) };
+        const SystemIndex systemIndex { indexMap.at(typeIndex) };
+
+        const auto& system { systems.at(systemIndex) };
+        return system->setEnabled(isEnabled);
+
+    } else {
+        throw std::runtime_error("ecs::Scene::isSystemEnabled() - System do not exists in the scene");
+    }
+}
+
+// Update the state of the scene by instructing each system to update
+void Scene::update(float deltaTime) {
+    for (const auto& system : systems) {
+        if (system->isEnabled()) {
+            system->update(*this, deltaTime);
+        }
+    }
+}
+
+// Returns an array of Entity handles that have a list of components
+template<typename... ComponentTypes>
+std::vector<Entity> Scene::getEntitiesWith() const {
+    std::vector<Entity> filteredEntities;
+    std::vector<Entity> validEntities { entityManager->getValidEntities() };
+
+    const EntityMask requiredMask { (componentManager->getComponentTypeMask<ComponentTypes>() | ...) };
+
+    for (const Entity& entity : validEntities) {
+        const EntityMask entityMask { entityManager->getMask(entity) };
+
+        if ((entityMask & requiredMask) == requiredMask) {
+            filteredEntities.push_back(entity);
+        }
+    }
+
+    return filteredEntities;
+}
+
 // Returns a read-only reference to the entity manager for direct access
 const EntityManager& Scene::getEntityManager() const {
     return *entityManager;
@@ -131,6 +268,29 @@ const EntityManager& Scene::getEntityManager() const {
 // Returns a read-only reference to the component manager for direct access
 const ComponentManager& Scene::getComponentManager() const {
     return *componentManager;
+}
+
+// Sort systems in the Scene by their priority value
+void Scene::sortSystems() {
+    std::sort(systems.begin(), systems.end(),
+        [](const std::unique_ptr<System>& a, const std::unique_ptr<System>& b) {
+            return a->getPriority() < b->getPriority();
+        }
+    );
+
+    rebuildMap();
+}
+
+// Rebuild indexMap so it point to the correct system
+void Scene::rebuildMap() {
+    indexMap.clear();
+
+    for (SystemIndex systemIndex { 0 }; systemIndex < systems.size(); systemIndex++) {
+        const auto& genericSystem { systems.at(systemIndex).get() };
+        const std::type_index typeIndex { std::type_index(typeid(*genericSystem)) };
+
+        indexMap.insert({ typeIndex, systemIndex });
+    }
 }
 
 } // namespace ecs

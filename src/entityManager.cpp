@@ -39,6 +39,23 @@ bool EntityManager::isValid(const Entity& entity) const {
     }
 }
 
+// Returns an array of Entity handle with valid ID and generation number
+std::vector<Entity> EntityManager::getValidEntities() const {
+    std::vector<Entity> validEntities;
+    Entity entity;
+
+    for (EntityID id { 0 }; id < entityGens.size(); id++) {
+        entity.id = id;
+        entity.gen = entityGens.at(id);
+
+        if (isValid(entity)) {
+            validEntities.push_back(entity);
+        }
+    }
+
+    return validEntities;
+}
+
 // Returns the mask of an entity
 EntityMask EntityManager::getMask(const Entity& entity) const {
     if (isValid(entity)) {
